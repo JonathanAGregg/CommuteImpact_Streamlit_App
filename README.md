@@ -1,131 +1,70 @@
-# Commute Impact Analysis Streamlit App
+# Commute Impact Analysis
 
-https://github.com/jgregg-cresa
+A Streamlit application that compares employee commute times to office locations using the Google Maps Distance Matrix API. It accepts origins and destinations as CSV files, calculates driving or transit durations, displays the locations on a map, and exports the established long-form commute-impact CSV.
 
-<a id="readme-top"></a>
+## Requirements
 
-## About The Project
+- Python 3.11 (the configured development-container version)
+- A Google Maps API key with Distance Matrix and Geocoding access enabled
 
-The **Commute Impact Analysis Streamlit App** is designed to analyze employee commute times to potential office locations using Google Maps Distance Matrix API. The app compares driving and public transit commute durations, visualizes data on an interactive map, and categorizes commute time changes into intuitive buckets.
+> Google Maps requests can incur charges. Use a restricted API key and configure quotas appropriate for the expected upload size.
 
-Key Features:
-* Analyze commute times for different transit methods
-* Compare commute times to multiple destination locations
-* Interactive map with Folium integration
-* Export categorized commute data as CSV
+## Local setup
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+```bash
+git clone https://github.com/JonathanAGregg/CommuteImpact_Streamlit_App.git
+cd CommuteImpact_Streamlit_App/StreamlitApp
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+mkdir -p .streamlit
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml
+```
 
+Set the API key in `.streamlit/secrets.toml`:
 
-### Built With
+```toml
+[google_maps]
+api_key = "YOUR_GOOGLE_MAPS_API_KEY"
+```
 
-* [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
-* [Pandas](https://pandas.pydata.org/)
-* [Folium](https://python-visualization.github.io/folium/)
-* [Google Maps API](https://developers.google.com/maps/documentation)
-* [TimezoneFinder](https://timezonefinder.readthedocs.io/en/latest/)
+The real secrets file is ignored by Git. The bundled `ZIP_Code_Population_Weighted_Centroids.csv` is used when an uploaded row supplies a supported US ZIP code rather than coordinates.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+Run the application from the `StreamlitApp` directory:
 
+```bash
+streamlit run StreamlitApp_PublicTransit.py
+```
 
-## Getting Started
+## CSV input contract
 
-Follow these steps to set up the project locally.
+Upload one origins CSV and one destinations CSV.
 
-### Prerequisites
+For each row, provide one of the following location forms:
 
-- Python 3.8+
-- Google Maps API key
-- ZIP code population-weighted centroids CSV file
+- both latitude and longitude (`Latitude`/`Longitude`, `lat`/`lon`, or GIS `Y`/`X`);
+- a US ZIP code (`Zipcode`, `Zip Code`, `Zip`, `Postal Code`, or `Postal`), resolved through the bundled centroid file; or
+- a complete address assembled from address, city/town, state, and ZIP/postal columns, which is geocoded through Google.
 
-### Installation
+Origins may include `Employee_ID`; otherwise sequential IDs are generated. A `count_employees` column expands a row into that many employees and must contain whole, non-negative values.
 
-1. Clone the repo
-   ```bash
-   git clone https://github.com/your_username/CommuteImpactAnalysis.git
-   ```
-2. Create and activate a virtual environment
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\\Scripts\\activate`
-   ```
-3. Install dependencies
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Configure Google Maps API key in `secrets.toml`
-   ```toml
-   [google_maps]
-   api_key = "YOUR_API_KEY"
-   ```
-5. Ensure the ZIP code data file is located in the root directory
+The **first row in the destinations CSV is the current location**. Every subsequent destination is compared to it. Reordering destination rows changes the meaning of the commute deltas.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+The app uses the first valid origin's timezone to send Google a departure time of 8:00 AM on the next Wednesday. For geographically distributed workforces, this is a single shared departure-time policy rather than per-employee local 8:00 AM routing.
 
+## Development and validation
 
-## Usage
+The deterministic processing logic is in `StreamlitApp/commute_analysis.py`; the Streamlit and Google-client integration remains in `StreamlitApp/StreamlitApp_PublicTransit.py`.
 
-1. Run the app
-   ```bash
-   streamlit run StreamlitApp_PublicTransit.py
-   ```
-2. Upload origins and destinations CSV files in the sidebar
-3. Choose transit method (driving or transit)
-4. Click **Run Analysis** to generate results
-5. Download the categorized data as a CSV file
+Run the regression suite from the repository root:
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+```bash
+python -m pytest tests -q
+python -m compileall -q StreamlitApp tests
+```
 
-
-## Roadmap
-
-- [x] Analyze commute times for driving and public transit
-- [x] Interactive map with employee origins and office destinations
-- [ ] Multi-language support
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repo
-2. Create a new branch (`git checkout -b feature/YourFeature`)
-3. Commit your changes (`git commit -m 'Add YourFeature'`)
-4. Push to the branch (`git push origin feature/YourFeature`)
-5. Open a Pull Request
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
+The tests exercise coordinate normalization, ZIP lookup, Google request chunking, response-shape validation, unavailable routes, and coordinate-only inputs. They make no Google API calls.
 
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for details.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-## Acknowledgments
-
-* [Streamlit](https://streamlit.io/)
-* [Google Maps API](https://developers.google.com/maps/documentation)
-* [Folium](https://python-visualization.github.io/folium/)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-<!-- MARKDOWN LINKS & IMAGES -->
-[contributors-shield]: https://img.shields.io/github/contributors/your_username/CommuteImpactAnalysis.svg?style=for-the-badge
-[contributors-url]: https://github.com/your_username/CommuteImpactAnalysis/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/your_username/CommuteImpactAnalysis.svg?style=for-the-badge
-[forks-url]: https://github.com/your_username/CommuteImpactAnalysis/network/members
-[stars-shield]: https://img.shields.io/github/stars/your_username/CommuteImpactAnalysis.svg?style=for-the-badge
-[stars-url]: https://github.com/your_username/CommuteImpactAnalysis/stargazers
-[issues-shield]: https://img.shields.io/github/issues/your_username/CommuteImpactAnalysis.svg?style=for-the-badge
-[issues-url]: https://github.com/your_username/CommuteImpactAnalysis/issues
-[license-shield]: https://img.shields.io/github/license/your_username/CommuteImpactAnalysis.svg?style=for-the-badge
-[license-url]: https://github.com/your_username/CommuteImpactAnalysis/blob/main/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/your_linkedin
-
+Distributed under the MIT License. See `LICENSE.txt`.

@@ -1,0 +1,12 @@
+# Python bytecode and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+# Local environments
+.venv/
+venv/
+
+# Streamlit secrets
+.streamlit/secrets.toml
